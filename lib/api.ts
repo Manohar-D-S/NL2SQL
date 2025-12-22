@@ -39,11 +39,45 @@ class SQLTranslatorAPI {
     );
   }
 
-  // Translate natural language to SQL
+  // Translate natural language to SQL (with schema context)
   async translate(query: string, database: string): Promise<TranslateResponse> {
     try {
       console.log('[v0] Translate request:', { query, database });
-      const response = await this.client.post('/translate', { natural_language: query, database });
+
+      // Step 1: Fetch database schema from local MySQL server
+      let schema_context = '';
+      try {
+        console.log(`[v0] Fetching schema for database: ${database}`);
+        const schemaResponse = await axios.get(
+          `${API_CONFIG.sqlExecutionURL}/schema/${database}`,
+          { timeout: 5000 }
+        );
+
+        // Convert schema to CREATE TABLE statements format
+        const schemaData = schemaResponse.data;
+        if (schemaData.schema) {
+          const createStatements: string[] = [];
+          for (const [tableName, columns] of Object.entries(schemaData.schema)) {
+            const columnDefs = (columns as any[]).map((col: any) => {
+              return `${col.Field} ${col.Type}${col.Null === 'NO' ? ' NOT NULL' : ''}`;
+            }).join(', ');
+            createStatements.push(`CREATE TABLE ${tableName} (${columnDefs});`);
+          }
+          schema_context = createStatements.join(' ');
+          console.log(`[v0] Schema fetched: ${createStatements.length} tables`);
+        }
+      } catch (schemaError) {
+        console.warn('[v0] Failed to fetch schema, continuing without context:', schemaError);
+        // Continue without schema - BART will do its best
+      }
+
+      // Step 2: Send to Colab for translation with schema context
+      const response = await this.client.post('/translate', {
+        natural_language: query,
+        database,
+        schema_context  // Include schema context for BART model
+      });
+
       console.log('[v0] Translate response:', response.data);
       return response.data;
     } catch (error) {
@@ -68,10 +102,22 @@ class SQLTranslatorAPI {
     return response.data;
   }
 
-  // Execute SQL query
+  // Execute SQL query on LOCAL MySQL server
   async execute(sql: string, database: string): Promise<ExecuteResponse> {
-    const response = await this.client.post('/execute', { sql, database });
-    return response.data;
+    try {
+      console.log('[v0] Executing SQL on LOCAL MySQL:', { sql: sql.substring(0, 100), database });
+      // Use local SQL execution server (localhost:5000)
+      const response = await axios.post(
+        `${API_CONFIG.sqlExecutionURL}/execute`,
+        { sql, database },
+        { timeout: API_CONFIG.timeout }
+      );
+      console.log('[v0] Execution result:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[v0] Execute error:', error);
+      throw error;
+    }
   }
 
   // Get optimization suggestions

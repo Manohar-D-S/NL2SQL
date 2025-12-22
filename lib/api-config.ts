@@ -34,6 +34,10 @@ export const API_CONFIG = {
     // Full API base URL with /api suffix
     apiURL: `${getApiUrl()}/api`,
 
+    // SQL Execution URL (local MySQL server)
+    // This runs on localhost:5000 for executing SQL queries
+    sqlExecutionURL: 'http://localhost:5000/api',
+
     // Request timeout (30 seconds)
     timeout: 30000,
 
