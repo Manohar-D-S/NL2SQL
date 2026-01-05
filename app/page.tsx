@@ -218,18 +218,30 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          {/* Middle Panel - SQL Editor */}
+          {/* Middle Panel - Query Results */}
           <div className="flex-1 lg:flex-none lg:w-[36%] overflow-y-auto border-r border-border/50 flex flex-col">
             <div className="p-6 flex-1 flex flex-col">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                <span className="w-1 h-1 rounded-full bg-primary" />
-                SQL Editor
-              </h2>
-              <SQLEditor
-                value={selectedSQL}
-                onChange={setSelectedSQL}
-                onRun={() => handleValidateAndRun(selectedSQL)}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <span className="w-1 h-1 rounded-full bg-primary" />
+                  Results
+                </h2>
+                {selectedSQL && (
+                  <Button
+                    onClick={() => handleValidateAndRun(selectedSQL)}
+                    disabled={execute.isPending}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <span>▶</span>
+                    {execute.isPending ? 'Running...' : 'Run Query'}
+                  </Button>
+                )}
+              </div>
+              <ExecutionResult
+                result={executionResult}
                 isLoading={execute.isPending}
+                error={execute.error?.message}
               />
             </div>
           </div>
@@ -285,25 +297,6 @@ export default function WorkspacePage() {
                 />
               </div>
 
-              {/* Results Pane */}
-              <div className="hidden lg:block">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                  <span className="w-1 h-1 rounded-full bg-primary" />
-                  Results
-                </h2>
-                <ExecutionResult
-                  result={executionResult}
-                  isLoading={execute.isPending}
-                  error={execute.error?.message}
-                />
-              </div>
-              <div className="lg:hidden" style={{ display: activeTab === "results" ? "block" : "none" }}>
-                <ExecutionResult
-                  result={executionResult}
-                  isLoading={execute.isPending}
-                  error={execute.error?.message}
-                />
-              </div>
 
               {/* Optimization Pane */}
               <div className="hidden lg:block">

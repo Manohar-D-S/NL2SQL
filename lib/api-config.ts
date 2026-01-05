@@ -8,9 +8,12 @@
 // 2. Environment variable (NEXT_PUBLIC_API_URL)
 // 3. Local backend fallback
 const getApiUrl = (): string => {
-    // TEMPORARY: Hard-coded Colab ngrok URL
-    // This bypasses Next.js environment variable caching
-    return 'https://unpronouncing-kaylin-supersufficiently.ngrok-free.dev';
+    // Local backend (with Gemini translation)
+    // Run: python backend/local_sql_server.py
+    return 'http://localhost:5000';
+
+    // Colab ngrok URL (uncomment if using Colab)
+    // return 'https://unpronouncing-kaylin-supersufficiently.ngrok-free.dev';
 
     // Original code (uncomment after .env.local works):
     // // Check for environment variable

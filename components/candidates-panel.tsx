@@ -27,71 +27,99 @@ export function CandidatesPanel({ candidates, onSelect, onExplain, onRun }: Cand
     )
   }
 
+  // Get the selected candidate or first one
+  const selectedCandidate = candidates[selectedCandidateIndex] || candidates[0];
+
+  if (!selectedCandidate) {
+    return (
+      <div className="text-center py-12 text-muted-foreground glass rounded-lg border border-border/50 p-6">
+        <AlertCircle className="w-8 h-8 mx-auto mb-3 opacity-40" />
+        <p className="text-sm">No SQL candidates yet. Enter a natural language query to get started.</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-2">
-      {candidates.map((candidate, index) => (
-        <div
-          key={candidate.id}
-          className={`cursor-pointer transition-all duration-200 card-premium ${
-            selectedCandidateIndex === index
-              ? "ring-2 ring-primary from-primary/20 to-primary/5"
-              : "hover:from-card/90 hover:to-card/60"
-          }`}
-          onClick={() => onSelect(candidate.sql, index)}
-        >
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Badge variant="secondary" className="bg-secondary/80 text-secondary-foreground">
-                Candidate {index + 1}
+    <div className="space-y-4">
+      {/* Selected SQL Query Card */}
+      <div className="card-premium ring-2 ring-primary/50">
+        <div className="p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-primary/20 text-primary font-semibold">
+                Selected Query
               </Badge>
-              <Badge variant="outline" className="font-mono text-xs">
-                {(candidate.confidence * 100).toFixed(0)}%
+              <Badge variant="outline" className="font-mono text-xs bg-green-500/10 text-green-700 border-green-200">
+                {(selectedCandidate.confidence * 100).toFixed(0)}% Confidence
               </Badge>
             </div>
-            <code className="block text-xs bg-muted/40 p-3 rounded-md font-mono overflow-x-auto border border-border/50 text-foreground/80">
-              {candidate.sql.substring(0, 120)}
-              {candidate.sql.length > 120 ? "..." : ""}
+            {candidates.length > 1 && (
+              <span className="text-xs text-muted-foreground">
+                {selectedCandidateIndex + 1} of {candidates.length}
+              </span>
+            )}
+          </div>
+
+          {/* Full SQL Query */}
+          <div className="bg-muted/40 p-4 rounded-lg border border-border/50">
+            <code className="block text-sm font-mono text-foreground whitespace-pre-wrap break-all">
+              {selectedCandidate.sql}
             </code>
-            <div className="flex gap-2 justify-end">
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onExplain(candidate.sql)
-                }}
-                size="sm"
-                variant="ghost"
-                className="gap-1 text-xs hover:bg-muted/50"
-              >
-                <Eye className="w-3 h-3" />
-                Explain
-              </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSelect(candidate.sql, index)
-                }}
-                size="sm"
-                variant="ghost"
-                className="gap-1 text-xs hover:bg-muted/50"
-              >
-                <Edit2 className="w-3 h-3" />
-              </Button>
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRun(candidate.sql)
-                }}
-                size="sm"
-                variant="ghost"
-                className="gap-1 text-xs hover:bg-muted/50"
-              >
-                <Play className="w-3 h-3" />
-                Run
-              </Button>
-            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button
+              onClick={() => onRun(selectedCandidate.sql)}
+              className="flex-1 gap-2 bg-primary hover:bg-primary/90"
+              size="lg"
+            >
+              <Play className="w-4 h-4" />
+              Run Query
+            </Button>
+            <Button
+              onClick={() => onExplain(selectedCandidate.sql)}
+              variant="outline"
+              size="lg"
+              className="gap-2"
+            >
+              <Eye className="w-4 h-4" />
+              Explain
+            </Button>
           </div>
         </div>
-      ))}
+      </div>
+
+      {/* Alternative Candidates Selector (if multiple) */}
+      {candidates.length > 1 && (
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Alternative Queries ({candidates.length - 1})
+          </div>
+          <div className="space-y-2">
+            {candidates.map((candidate, index) => {
+              if (index === selectedCandidateIndex) return null;
+              return (
+                <button
+                  key={`candidate-${candidate.id}-${index}`}
+                  className="w-full text-left p-3 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-muted/20 transition-all"
+                  onClick={() => onSelect(candidate.sql, index)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-muted-foreground">Option {index + 1}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {(candidate.confidence * 100).toFixed(0)}%
+                    </Badge>
+                  </div>
+                  <code className="block text-xs font-mono text-foreground/60 line-clamp-2">
+                    {candidate.sql}
+                  </code>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
