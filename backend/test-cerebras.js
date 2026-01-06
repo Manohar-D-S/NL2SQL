@@ -3,7 +3,8 @@
  * Run: node test-cerebras.js
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const Cerebras = require('@cerebras/cerebras_cloud_sdk').default;
 
