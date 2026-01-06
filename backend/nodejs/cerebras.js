@@ -298,6 +298,157 @@ Please fix the SQL query based on the error and schema. Return ONLY the correcte
 }
 
 /**
+ * Translate natural language to MongoDB query using Cerebras AI
+ * @param {string} naturalLanguage - The natural language query
+ * @param {string} schemaContext - Database schema context (collection structures)
+ * @returns {Promise<{query: object, candidates: Array, success: boolean}>}
+ */
+async function translateToMongoDB(naturalLanguage, schemaContext = '') {
+    const systemPrompt = `You are an expert MongoDB query writer. Your task is to convert natural language queries into valid MongoDB operations.
+
+IMPORTANT RULES:
+1. Return ONLY a valid JSON object with the following structure:
+   {
+     "collection": "collectionName",
+     "operation": "find|findOne|aggregate|count|distinct",
+     "query": { ... },
+     "options": { ... }
+   }
+2. Use collection and field names exactly as shown in the schema
+3. For aggregation pipelines, put the pipeline array in the "query" field
+4. Do NOT include any explanation or markdown, ONLY the JSON object
+5. Common operations:
+   - find: query is the filter object
+   - aggregate: query is the pipeline array
+   - count: query is the filter object
+   - distinct: query is the filter, options.field is the field name`;
+
+    const userPrompt = schemaContext
+        ? `SCHEMA:\n${schemaContext}\n\nQUERY: ${naturalLanguage}\n\nMONGODB JSON:`
+        : `QUERY: ${naturalLanguage}\n\nMONGODB JSON:`;
+
+    try {
+        const cerebrasClient = getClient();
+        if (!cerebrasClient) {
+            throw new Error('Cerebras API key not configured');
+        }
+        const completion = await cerebrasClient.chat.completions.create({
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+            ],
+            model: MODEL,
+            temperature: 0.1,
+            max_completion_tokens: 1024,
+        });
+
+        let response = completion.choices[0]?.message?.content?.trim() || '';
+
+        // Clean up the response
+        response = response.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
+
+        // Parse the JSON
+        let queryObj;
+        try {
+            queryObj = JSON.parse(response);
+        } catch (e) {
+            console.error('Failed to parse MongoDB query JSON:', response);
+            throw new Error('Invalid MongoDB query format returned');
+        }
+
+        // Format for display
+        const displayQuery = `db.${queryObj.collection}.${queryObj.operation}(${JSON.stringify(queryObj.query, null, 2)})`;
+
+        return {
+            query: queryObj,
+            sql: displayQuery, // For compatibility with frontend
+            candidates: [{ id: '1', sql: displayQuery, query: queryObj, confidence: 0.9 }],
+            selectedIndex: 0,
+            success: true,
+        };
+    } catch (error) {
+        console.error('Cerebras MongoDB translation error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Debug and fix a failed MongoDB query
+ * @param {string} queryStr - The MongoDB query that failed (as string)
+ * @param {string} errorMessage - The error message from MongoDB
+ * @param {string} schemaContext - Database schema context
+ * @returns {Promise<{fixedQuery: object, success: boolean}>}
+ */
+async function debugMongoDB(queryStr, errorMessage, schemaContext = '') {
+    const systemPrompt = `You are an expert MongoDB debugger. Your task is to fix MongoDB queries that have errors.
+
+IMPORTANT RULES:
+1. Analyze the error message carefully
+2. Use the schema to identify correct collection and field names
+3. Return ONLY a valid JSON object with the following structure:
+   {
+     "collection": "collectionName",
+     "operation": "find|findOne|aggregate|count|distinct",
+     "query": { ... },
+     "options": { ... }
+   }
+4. Do NOT include any explanation or markdown, ONLY the JSON object`;
+
+    const userPrompt = `SCHEMA:
+${schemaContext}
+
+FAILED MONGODB QUERY:
+${queryStr}
+
+ERROR MESSAGE:
+${errorMessage}
+
+Please fix the MongoDB query based on the error and schema. Return ONLY the corrected JSON:`;
+
+    try {
+        const cerebrasClient = getClient();
+        if (!cerebrasClient) {
+            throw new Error('Cerebras API key not configured');
+        }
+        const completion = await cerebrasClient.chat.completions.create({
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt },
+            ],
+            model: MODEL,
+            temperature: 0.1,
+            max_completion_tokens: 1024,
+        });
+
+        let response = completion.choices[0]?.message?.content?.trim() || '';
+
+        // Clean up the response
+        response = response.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
+
+        // Parse the JSON
+        let queryObj;
+        try {
+            queryObj = JSON.parse(response);
+        } catch (e) {
+            console.error('Failed to parse fixed MongoDB query JSON:', response);
+            throw new Error('Invalid MongoDB query format returned');
+        }
+
+        const displayQuery = `db.${queryObj.collection}.${queryObj.operation}(${JSON.stringify(queryObj.query, null, 2)})`;
+
+        return {
+            fixedQuery: queryObj,
+            fixedSql: displayQuery, // For compatibility
+            originalError: errorMessage,
+            success: true,
+        };
+    } catch (error) {
+        console.error('Cerebras MongoDB debug error:', error);
+        throw error;
+    }
+}
+
+/**
  * Check if Cerebras client is configured
  * @returns {boolean}
  */
@@ -307,10 +458,12 @@ function isAvailable() {
 
 module.exports = {
     translateToSQL,
+    translateToMongoDB,
     explainSQL,
     optimizeSQL,
     validateSQL,
     debugSQL,
+    debugMongoDB,
     isAvailable,
     MODEL,
 };

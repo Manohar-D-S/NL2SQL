@@ -7,19 +7,34 @@ const { MongoClient } = require('mongodb');
 
 // MongoDB client singleton
 let client = null;
-let db = null;
 
 /**
  * Get MongoDB client
  * @returns {Promise<MongoClient>}
  */
 async function getClient() {
-    if (!client) {
-        const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-        client = new MongoClient(uri);
-        await client.connect();
-        console.log('✅ MongoDB connected');
+    // Check if client exists and is connected
+    if (client) {
+        try {
+            // Test if connection is still alive
+            await client.db('admin').command({ ping: 1 });
+            return client;
+        } catch (error) {
+            console.log('MongoDB connection lost, reconnecting...');
+            client = null;
+        }
     }
+
+    // Create new connection
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+    console.log('Connecting to MongoDB...');
+    client = new MongoClient(uri, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+    });
+    await client.connect();
+    console.log('✅ MongoDB connected');
     return client;
 }
 
@@ -152,6 +167,32 @@ async function executeQuery(dbName, collectionName, operation, query = {}, optio
 }
 
 /**
+ * Get schema context for AI prompts
+ * Returns a text description of all collections and their fields
+ * @param {string} dbName - Database name
+ * @returns {Promise<string>}
+ */
+async function getSchemaContext(dbName) {
+    try {
+        const collections = await listCollections(dbName);
+        const schemaLines = [];
+
+        for (const collName of collections) {
+            const schema = await getCollectionSchema(dbName, collName);
+            if (schema.fields && schema.fields.length > 0) {
+                const fields = schema.fields.map(f => `${f.name}: ${f.type}`).join(', ');
+                schemaLines.push(`Collection "${collName}": { ${fields} } (${schema.documentCount} documents)`);
+            }
+        }
+
+        return schemaLines.join('\n');
+    } catch (error) {
+        console.error('Failed to get MongoDB schema context:', error.message);
+        return '';
+    }
+}
+
+/**
  * Close MongoDB connection
  */
 async function close() {
@@ -169,6 +210,7 @@ module.exports = {
     listDatabases,
     listCollections,
     getCollectionSchema,
+    getSchemaContext,
     executeQuery,
     close,
 };

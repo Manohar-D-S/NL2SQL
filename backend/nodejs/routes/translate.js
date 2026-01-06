@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const cerebras = require('../cerebras');
 const mysqlDb = require('../mysql');
+const mongoDb = require('../mongodb');
 
 /**
  * POST /api/translate
@@ -29,21 +30,37 @@ router.post('/translate', async (req, res, next) => {
 
         console.log(`[translate] Query: "${natural_language.substring(0, 50)}...", Database: ${database}`);
 
+        // Check if MongoDB mode
+        const isMongoDB = database === 'mongodb';
+
         // Get schema context if not provided
         let schemaCtx = schema_context || '';
         if (!schemaCtx) {
             try {
-                schemaCtx = await mysqlDb.getSchemaContext(database);
-                console.log(`[translate] Fetched schema context for ${database}`);
+                if (isMongoDB) {
+                    // For MongoDB, get the default database schema
+                    const mongoDbName = process.env.MONGODB_DATABASE || 'sample_mflix';
+                    schemaCtx = await mongoDb.getSchemaContext(mongoDbName);
+                    console.log(`[translate] Fetched MongoDB schema context for ${mongoDbName}`);
+                } else {
+                    schemaCtx = await mysqlDb.getSchemaContext(database);
+                    console.log(`[translate] Fetched MySQL schema context for ${database}`);
+                }
             } catch (e) {
                 console.warn('[translate] Could not fetch schema context:', e.message);
             }
         }
 
         // Translate using Cerebras
-        const result = await cerebras.translateToSQL(natural_language, schemaCtx);
+        let result;
+        if (isMongoDB) {
+            result = await cerebras.translateToMongoDB(natural_language, schemaCtx);
+            console.log(`[translate] Generated MongoDB query: ${result.sql?.substring(0, 100)}`);
+        } else {
+            result = await cerebras.translateToSQL(natural_language, schemaCtx);
+            console.log(`[translate] Generated SQL: ${result.sql?.substring(0, 100)}`);
+        }
 
-        console.log(`[translate] Generated SQL: ${result.sql?.substring(0, 100)}`);
         res.json(result);
     } catch (error) {
         console.error('[translate] Error:', error);
@@ -152,21 +169,36 @@ router.post('/debug', async (req, res, next) => {
             });
         }
 
-        console.log(`[debug] Fixing SQL error: "${errorMessage.substring(0, 50)}..."`);
+        console.log(`[debug] Fixing query error: "${errorMessage.substring(0, 50)}...", Database: ${database}`);
+
+        // Check if MongoDB mode
+        const isMongoDB = database === 'mongodb';
 
         // Get schema context
         let schemaCtx = '';
         try {
-            schemaCtx = await mysqlDb.getSchemaContext(database);
-            console.log(`[debug] Fetched schema context for ${database}`);
+            if (isMongoDB) {
+                const mongoDbName = process.env.MONGODB_DATABASE || 'sample_mflix';
+                schemaCtx = await mongoDb.getSchemaContext(mongoDbName);
+                console.log(`[debug] Fetched MongoDB schema context for ${mongoDbName}`);
+            } else {
+                schemaCtx = await mysqlDb.getSchemaContext(database);
+                console.log(`[debug] Fetched MySQL schema context for ${database}`);
+            }
         } catch (e) {
             console.warn('[debug] Could not fetch schema context:', e.message);
         }
 
         // Debug using Cerebras
-        const result = await cerebras.debugSQL(sql, errorMessage, schemaCtx);
+        let result;
+        if (isMongoDB) {
+            result = await cerebras.debugMongoDB(sql, errorMessage, schemaCtx);
+            console.log(`[debug] Fixed MongoDB query: ${result.fixedSql?.substring(0, 100)}`);
+        } else {
+            result = await cerebras.debugSQL(sql, errorMessage, schemaCtx);
+            console.log(`[debug] Fixed SQL: ${result.fixedSql?.substring(0, 100)}`);
+        }
 
-        console.log(`[debug] Fixed SQL: ${result.fixedSql?.substring(0, 100)}`);
         res.json(result);
     } catch (error) {
         console.error('[debug] Error:', error);

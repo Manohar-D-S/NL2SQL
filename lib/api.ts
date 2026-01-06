@@ -44,31 +44,35 @@ class SQLTranslatorAPI {
     try {
       console.log('[v0] Translate request:', { query, database });
 
-      // Step 1: Fetch database schema from local MySQL server
+      // Step 1: Fetch database schema from local MySQL server (skip for MongoDB - backend handles it)
       let schema_context = '';
-      try {
-        console.log(`[v0] Fetching schema for database: ${database}`);
-        const schemaResponse = await axios.get(
-          `${API_CONFIG.sqlExecutionURL}/schema/${database}`,
-          { timeout: 5000 }
-        );
+      if (database !== 'mongodb') {
+        try {
+          console.log(`[v0] Fetching schema for database: ${database}`);
+          const schemaResponse = await axios.get(
+            `${API_CONFIG.sqlExecutionURL}/schema/${database}`,
+            { timeout: 5000 }
+          );
 
-        // Convert schema to CREATE TABLE statements format
-        const schemaData = schemaResponse.data;
-        if (schemaData.schema) {
-          const createStatements: string[] = [];
-          for (const [tableName, columns] of Object.entries(schemaData.schema)) {
-            const columnDefs = (columns as any[]).map((col: any) => {
-              return `${col.Field} ${col.Type}${col.Null === 'NO' ? ' NOT NULL' : ''}`;
-            }).join(', ');
-            createStatements.push(`CREATE TABLE ${tableName} (${columnDefs});`);
+          // Convert schema to CREATE TABLE statements format
+          const schemaData = schemaResponse.data;
+          if (schemaData.schema) {
+            const createStatements: string[] = [];
+            for (const [tableName, columns] of Object.entries(schemaData.schema)) {
+              const columnDefs = (columns as any[]).map((col: any) => {
+                return `${col.Field} ${col.Type}${col.Null === 'NO' ? ' NOT NULL' : ''}`;
+              }).join(', ');
+              createStatements.push(`CREATE TABLE ${tableName} (${columnDefs});`);
+            }
+            schema_context = createStatements.join(' ');
+            console.log(`[v0] Schema fetched: ${createStatements.length} tables`);
           }
-          schema_context = createStatements.join(' ');
-          console.log(`[v0] Schema fetched: ${createStatements.length} tables`);
+        } catch (schemaError) {
+          console.warn('[v0] Failed to fetch schema, continuing without context:', schemaError);
+          // Continue without schema - model will do its best
         }
-      } catch (schemaError) {
-        console.warn('[v0] Failed to fetch schema, continuing without context:', schemaError);
-        // Continue without schema - BART will do its best
+      } else {
+        console.log('[v0] MongoDB mode - backend will fetch schema');
       }
 
       // Step 2: Send to Colab for translation with schema context
@@ -129,11 +133,71 @@ class SQLTranslatorAPI {
     }
   }
 
-  // Execute SQL query on LOCAL MySQL server
+  // Execute SQL query on LOCAL MySQL server or MongoDB
   async execute(sql: string, database: string): Promise<ExecuteResponse> {
     try {
+      // Check if MongoDB mode
+      if (database === 'mongodb') {
+        console.log('[v0] Executing MongoDB query:', { sql: sql.substring(0, 100) });
+
+        // Parse the MongoDB query from the display format
+        // The sql will be in format: db.collection.operation({...})
+        // We need to extract and call the mongo/execute endpoint
+        let queryObj;
+        try {
+          // Try to parse as JSON if it's already a query object
+          queryObj = JSON.parse(sql);
+        } catch {
+          // If it's in display format, we need to extract the query
+          // For now, return an error asking to use proper format
+          console.log('[v0] MongoDB query is in display format, attempting to parse');
+
+          // Extract collection and operation from display format
+          const match = sql.match(/db\.(\w+)\.(\w+)\(([\s\S]*)\)$/);
+          if (match) {
+            const [, collection, operation, queryStr] = match;
+            let query = {};
+
+            // Try to parse the query content if not empty
+            const trimmedQuery = queryStr.trim();
+            if (trimmedQuery && trimmedQuery !== '{}') {
+              try {
+                // Clean up multi-line JSON
+                const cleanedQuery = trimmedQuery.replace(/\n/g, '').replace(/\s+/g, ' ').trim();
+                query = JSON.parse(cleanedQuery);
+              } catch {
+                console.error('[v0] Could not parse MongoDB query:', trimmedQuery);
+                throw new Error('Could not parse MongoDB query. Invalid JSON format.');
+              }
+            }
+
+            queryObj = { collection, operation, query };
+          } else {
+            console.error('[v0] Could not match MongoDB query format:', sql);
+            throw new Error('Invalid MongoDB query format. Expected: db.collection.operation({...})');
+          }
+        }
+
+        // Get the MongoDB database name from env or default
+        const mongoDbName = process.env.NEXT_PUBLIC_MONGODB_DATABASE || 'sample_mflix';
+
+        const response = await axios.post(
+          `${API_CONFIG.sqlExecutionURL}/mongo/execute`,
+          {
+            database: mongoDbName,
+            collection: queryObj.collection,
+            operation: queryObj.operation,
+            query: queryObj.query,
+            options: queryObj.options || {}
+          },
+          { timeout: API_CONFIG.timeout }
+        );
+        console.log('[v0] MongoDB execution result:', response.data);
+        return response.data;
+      }
+
+      // MySQL execution
       console.log('[v0] Executing SQL on LOCAL MySQL:', { sql: sql.substring(0, 100), database });
-      // Use local SQL execution server (localhost:5000)
       const response = await axios.post(
         `${API_CONFIG.sqlExecutionURL}/execute`,
         { sql, database },
