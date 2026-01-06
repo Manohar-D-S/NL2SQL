@@ -48,6 +48,13 @@ export interface OptimizeResponse {
   suggestions: OptimizationSuggestion[];
 }
 
+export interface DebugResponse {
+  fixedSql: string;
+  originalSql: string;
+  originalError: string;
+  success: boolean;
+}
+
 export interface SchemaTable {
   name: string;
   columns: {

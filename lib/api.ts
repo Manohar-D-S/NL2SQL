@@ -147,6 +147,28 @@ class SQLTranslatorAPI {
     }
   }
 
+  // Debug and fix a failed SQL query
+  async debug(sql: string, error: string, database: string): Promise<{
+    fixedSql: string;
+    originalSql: string;
+    originalError: string;
+    success: boolean;
+  }> {
+    try {
+      console.log('[v0] Debug request:', { sql: sql.substring(0, 50), error: error.substring(0, 50) });
+      const response = await this.client.post('/debug', { sql, error, database });
+      console.log('[v0] Debug response:', response.data);
+      return response.data;
+    } catch (err) {
+      const axiosError = err as AxiosError;
+      console.error('[v0] Debug failed:', {
+        message: axiosError.message,
+        status: axiosError.response?.status,
+      });
+      throw new Error(`Failed to debug query: ${axiosError.message}`);
+    }
+  }
+
   // Get optimization suggestions
   async optimize(sql: string, database: string): Promise<OptimizeResponse> {
     try {

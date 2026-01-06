@@ -43,3 +43,11 @@ export const useOptimize = () => {
     },
   });
 };
+
+export const useDebug = () => {
+  return useMutation({
+    mutationFn: async ({ sql, error, database }: { sql: string; error: string; database: string }) => {
+      return apiClient.debug(sql, error, database);
+    },
+  });
+};

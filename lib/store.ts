@@ -38,7 +38,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   theme: 'light',
-  selectedDatabase: 'default',
+  selectedDatabase: 'sakila',
   language: 'en',
   voiceEnabled: false,
   showUnsafeWarnings: true,

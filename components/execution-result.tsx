@@ -11,11 +11,13 @@ interface ExecutionResultProps {
   result?: ExecuteResponse
   isLoading: boolean
   error?: string
+  onDebug?: () => void
+  isDebugging?: boolean
 }
 
 const ROWS_PER_PAGE = 10
 
-export function ExecutionResult({ result, isLoading, error }: ExecutionResultProps) {
+export function ExecutionResult({ result, isLoading, error, onDebug, isDebugging }: ExecutionResultProps) {
   const [currentPage, setCurrentPage] = useState(0)
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
 
@@ -38,25 +40,36 @@ export function ExecutionResult({ result, isLoading, error }: ExecutionResultPro
 
   if (error) {
     return (
-      <div className="card-premium p-4 bg-destructive/5 border-destructive/50">
+      <div className="card-modern p-4 bg-destructive/5 border-destructive/30 space-y-3">
         <h4 className="font-semibold text-destructive mb-1 text-sm">Execution Error</h4>
         <p className="text-xs text-destructive/80">{error}</p>
+        {onDebug && (
+          <Button
+            onClick={onDebug}
+            disabled={isDebugging}
+            size="sm"
+            variant="outline"
+            className="gap-2 text-xs border-primary/50 text-primary hover:bg-primary/10"
+          >
+            {isDebugging ? 'Fixing...' : '🔧 Debug & Fix Query'}
+          </Button>
+        )}
       </div>
     )
   }
 
   if (isLoading) {
     return (
-      <div className="card-premium p-4 space-y-3">
-        <div className="h-4 bg-muted/50 rounded-md w-1/3 animate-pulse" />
-        <div className="h-24 bg-muted/50 rounded-md animate-pulse" />
+      <div className="card-modern p-4 space-y-3">
+        <div className="h-4 bg-secondary rounded-md w-1/3 animate-pulse" />
+        <div className="h-24 bg-secondary rounded-md animate-pulse" />
       </div>
     )
   }
 
   if (!result) {
     return (
-      <div className="card-premium p-6 text-center text-muted-foreground">
+      <div className="card-modern p-8 text-center text-muted-foreground">
         <p className="text-sm">Execute a query to see results</p>
       </div>
     )
@@ -67,8 +80,8 @@ export function ExecutionResult({ result, isLoading, error }: ExecutionResultPro
   const totalPages = Math.ceil(result.rows.length / ROWS_PER_PAGE)
 
   return (
-    <div className="card-premium space-y-4 p-4 flex flex-col">
-      <div className="flex items-center justify-between pb-4 border-b border-border/50">
+    <div className="card-modern space-y-4 p-4 flex flex-col">
+      <div className="flex items-center justify-between pb-4 border-b border-border">
         <div>
           <h3 className="font-semibold text-sm">Query Results</h3>
           <p className="text-xs text-muted-foreground">
@@ -79,7 +92,7 @@ export function ExecutionResult({ result, isLoading, error }: ExecutionResultPro
           onClick={handleDownloadCSV}
           size="sm"
           variant="outline"
-          className="gap-2 text-xs glass border-border/50 hover:bg-muted/50 bg-transparent"
+          className="gap-2 text-xs border-border bg-secondary/50 hover:bg-secondary"
         >
           <Download className="w-3 h-3" />
           CSV

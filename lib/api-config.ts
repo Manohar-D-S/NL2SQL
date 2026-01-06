@@ -8,8 +8,8 @@
 // 2. Environment variable (NEXT_PUBLIC_API_URL)
 // 3. Local backend fallback
 const getApiUrl = (): string => {
-    // Local backend (with Gemini translation)
-    // Run: python backend/local_sql_server.py
+    // Node.js backend (with Cerebras Qwen 3 235B translation)
+    // Run: cd backend/nodejs && node server.js
     return 'http://localhost:5000';
 
     // Colab ngrok URL (uncomment if using Colab)

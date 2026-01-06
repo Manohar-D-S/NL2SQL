@@ -45,19 +45,19 @@ export function NLInputBar({ onTranslate }: NLInputBarProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <Textarea
         value={nlQuery}
         onChange={(e) => setNLQuery(e.target.value)}
         placeholder="Ask anything in English, e.g., Show students scoring above 80"
-        className="min-h-28 resize-none glass border-border/50 rounded-lg focus:border-primary/50 transition-all"
+        className="min-h-32 resize-none bg-input border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
       />
       <div className="flex gap-2">
         <Button
           onClick={handleVoiceClick}
           variant="outline"
           size="sm"
-          className="glass border-border/50 gap-2 hover:bg-muted/50 bg-transparent"
+          className="border-border bg-secondary/50 hover:bg-secondary gap-2"
         >
           <Mic className="w-4 h-4" />
           Voice
@@ -65,7 +65,7 @@ export function NLInputBar({ onTranslate }: NLInputBarProps) {
         <Button
           onClick={handleTranslate}
           disabled={!nlQuery.trim() || translate.isPending}
-          className="flex-1 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all"
+          className="flex-1 gap-2 btn-primary rounded-xl"
         >
           <Send className="w-4 h-4" />
           {translate.isPending ? "Translating..." : "Translate"}
@@ -74,13 +74,13 @@ export function NLInputBar({ onTranslate }: NLInputBarProps) {
           onClick={handleClear}
           variant="outline"
           size="sm"
-          className="glass border-border/50 gap-2 hover:bg-muted/50 bg-transparent"
+          className="border-border bg-secondary/50 hover:bg-secondary"
         >
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
       {translate.error && (
-        <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/50">
+        <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl border border-destructive/30">
           Translation error: {translate.error instanceof Error ? translate.error.message : "Network Error"}
         </div>
       )}

@@ -5,8 +5,12 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "dev:frontend": "next dev",
+    "dev:backend": "node backend/nodejs/server.js",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "concurrently \"npm run dev:backend\" \"next dev\"",
+    "start:prod": "next start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -71,6 +75,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",

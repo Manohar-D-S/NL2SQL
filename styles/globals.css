@@ -40,38 +40,46 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --background: oklch(0.12 0.005 260);
+  /* Soft charcoal with slight blue */
+  --foreground: oklch(0.95 0 0);
+  /* Near white */
+  --card: oklch(0.16 0.005 260);
+  /* Elevated card surface */
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.18 0.005 260);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.65 0.2 265);
+  /* Indigo accent */
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.22 0.01 260);
+  /* Subtle secondary surface */
+  --secondary-foreground: oklch(0.9 0 0);
+  --muted: oklch(0.2 0.005 260);
+  --muted-foreground: oklch(0.6 0 0);
+  /* Readable gray */
+  --accent: oklch(0.55 0.15 265);
+  /* Lighter indigo for accents */
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.5 0.2 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.25 0.01 260);
+  /* Subtle visible borders */
+  --input: oklch(0.18 0.005 260);
+  --ring: oklch(0.55 0.15 265);
+  --chart-1: oklch(0.65 0.2 265);
+  --chart-2: oklch(0.65 0.15 180);
+  --chart-3: oklch(0.7 0.15 80);
+  --chart-4: oklch(0.6 0.2 300);
+  --chart-5: oklch(0.6 0.2 30);
+  --sidebar: oklch(0.14 0.005 260);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.65 0.2 265);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.22 0.01 260);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.25 0.01 260);
+  --sidebar-ring: oklch(0.55 0.15 265);
 }
 
 @theme inline {
@@ -119,7 +127,93 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Modern card styles */
+.card-modern {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.card-premium {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* Panel styling */
+.panel {
+  background: var(--card);
+  border-right: 1px solid var(--border);
+}
+
+/* Glass effect */
+.glass {
+  background: color-mix(in oklch, var(--card) 80%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* Section header styling */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  margin-bottom: 0.75rem;
+}
+
+.section-header::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* Input focus glow */
+.input-glow:focus {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 20%, transparent);
+}
+
+/* Subtle gradient background for sections */
+.gradient-subtle {
+  background: linear-gradient(135deg, var(--card) 0%, color-mix(in oklch, var(--card) 95%, var(--primary)) 100%);
+}
+
+/* Button primary styling */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, color-mix(in oklch, var(--primary) 80%, black) 100%);
+  color: var(--primary-foreground);
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px color-mix(in oklch, var(--primary) 30%, transparent);
+}
+
+/* Code/SQL editor background */
+.code-bg {
+  background: color-mix(in oklch, var(--background) 100%, black 20%);
+}
+
+/* Table styling */
+.table-modern th {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.table-modern tr:hover {
+  background: var(--muted);
 }
