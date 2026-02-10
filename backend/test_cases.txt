@@ -1,0 +1,119 @@
+================================================================================
+SQL TRANSLATION TEST CASES
+================================================================================
+
+Query: Show me all users
+SQL: SELECT * FROM users;
+Result:
++----+-------------+---------------------+-------------+---------+
+| id | name        | email               | signup_date | country |
++----+-------------+---------------------+-------------+---------+
+|  1 | Alice Smith | alice@example.com   | 2023-01-15  | USA     |
+|  2 | Bob Jones   | bob@example.com     | 2023-02-20  | UK      |
+|  3 | Charlie Li  | charlie@example.com | 2023-03-10  | China   |
++----+-------------+---------------------+-------------+---------+
+
+--------------------------------------------------------------------------------
+
+Query: Get names and emails of all users
+SQL: SELECT name, email FROM users;
+Result:
++-------------+---------------------+
+| name        | email               |
++-------------+---------------------+
+| Alice Smith | alice@example.com   |
+| Bob Jones   | bob@example.com     |
+| Charlie Li  | charlie@example.com |
++-------------+---------------------+
+
+--------------------------------------------------------------------------------
+
+Query: Show products costing more than $100
+SQL: SELECT * FROM products WHERE price > 100;
+Result:
++----+------------+--------------+--------+-------+
+| id | name       | category     | price  | stock |
++----+------------+--------------+--------+-------+
+| 10 | Laptop     | Electronics  | 999.99 | 15    |
+| 12 | Smartphone | Electronics  | 699.00 | 25    |
+| 15 | Desk Chair | Furniture    | 120.00 | 8     |
++----+------------+--------------+--------+-------+
+
+--------------------------------------------------------------------------------
+
+Query: Count users by country
+SQL: SELECT country, COUNT(*) FROM users GROUP BY country;
+Result:
++---------+----------+
+| country | COUNT(*) |
++---------+----------+
+| USA     | 145      |
+| UK      | 82       |
+| China   | 210      |
+| India   | 180      |
++---------+----------+
+
+--------------------------------------------------------------------------------
+
+Query: Show all orders for user 'John Doe'
+SQL: SELECT o.* FROM orders o JOIN users u ON o.user_id = u.id WHERE u.name = 'John Doe';
+Result:
++-----+---------+---------------------+-----------+--------------+
+| id  | user_id | order_date          | status    | total_amount |
++-----+---------+---------------------+-----------+--------------+
+| 101 | 45      | 2023-05-12 10:30:00 | SHIPPED   | 150.00       |
+| 105 | 45      | 2023-06-01 14:15:00 | DELIVERED | 85.50        |
++-----+---------+---------------------+-----------+--------------+
+
+================================================================================
+MONGODB TRANSLATION TEST CASES
+================================================================================
+
+Query: Find all users
+MongoDB: db.users.find({})
+Result:
+[
+  { "_id": "507f1f77bcf86cd799439011", "name": "Alice Smith", "email": "alice@example.com", "country": "USA" },
+  { "_id": "507f1f77bcf86cd799439012", "name": "Bob Jones", "email": "bob@example.com", "country": "UK" }
+]
+
+--------------------------------------------------------------------------------
+
+Query: Find products with price > 100
+MongoDB: db.products.find({ "price": { "$gt": 100 } })
+Result:
+[
+  { "_id": "p01", "name": "Laptop", "category": "Electronics", "price": 999.99 },
+  { "_id": "p02", "name": "Smartphone", "category": "Electronics", "price": 699.00 }
+]
+
+--------------------------------------------------------------------------------
+
+Query: Average price by category
+MongoDB: db.products.aggregate([{ "$group": { "_id": "$category", "avgPrice": { "$avg": "$price" } } }])
+Result:
+[
+  { "_id": "Electronics", "avgPrice": 450.50 },
+  { "_id": "Furniture", "avgPrice": 125.00 },
+  { "_id": "Books", "avgPrice": 22.99 }
+]
+
+================================================================================
+FAILED / ERROR SCENARIOS
+================================================================================
+
+Query: Show me the data
+SQL: N/A - Ambiguous Query
+Result: Error: Could not generate SQL. The query "Show me the data" is too vague. Please specify which table or information you need (e.g., 'Show all users').
+
+--------------------------------------------------------------------------------
+
+Query: Delete all users
+SQL: DELETE FROM users;
+Result: Error: Execution blocked. This query contains a destructive operation (DELETE) without a WHERE clause, which is not allowed by safety policy.
+
+--------------------------------------------------------------------------------
+
+Query: Show user ages
+SQL: SELECT age FROM users;
+Result: Error: SQL Execution Failed. Unknown column 'age' in 'field list'. (Hint: The 'users' table has columns: id, name, email, signup_date, country).

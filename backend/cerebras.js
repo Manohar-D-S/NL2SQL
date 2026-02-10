@@ -1,6 +1,6 @@
 /**
  * Cerebras AI Client
- * Wrapper for Cerebras Cloud SDK using Qwen 3 235B model
+ * Wrapper for Cerebras Cloud SDK with robust error handling
  */
 
 const Cerebras = require('@cerebras/cerebras_cloud_sdk').default;
@@ -21,8 +21,94 @@ function getClient() {
     return client;
 }
 
-// Model configuration
-const MODEL = 'qwen-3-235b-a22b-instruct-2507';
+// Model priority list
+// Tries to use the first available model. If 404, tries the next one.
+const MODELS = [
+    'qwen-3-235b-a22b-instruct-2507',
+    'llama-3.3-70b',         // Primary working model
+    'llama3.1-8b',           // Reliable fallback
+    'qwen-3-32b',            // User requested
+    'zai-glm-4.7',           // User requested
+];
+
+/**
+ * sleep helper
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Execute completion with retry logic and model fallback
+ * @param {Array} messages - Chat messages
+ * @param {Object} options - Additional options (temperature, etc.)
+ * @returns {Promise<object>} - Completion response
+ */
+async function createCompletion(messages, options = {}) {
+    const cerebrasClient = getClient();
+    if (!cerebrasClient) {
+        throw new Error('Cerebras API key not configured');
+    }
+
+    let lastError = null;
+
+    // Try each model in the list
+    for (const model of MODELS) {
+        console.log(`[Cerebras] Attempting with model: ${model}`);
+
+        try {
+            // Retry loop for rate limits (429)
+            let retries = 3;
+            let attempt = 0;
+
+            while (attempt <= retries) {
+                try {
+                    const completion = await cerebrasClient.chat.completions.create({
+                        messages,
+                        model: model,
+                        temperature: options.temperature || 0.1,
+                        max_completion_tokens: options.max_completion_tokens || 1024,
+                        stream: false,
+                    });
+
+                    console.log(`[Cerebras] Success with model: ${model}`);
+                    return completion;
+
+                } catch (error) {
+                    // Check for rate limit
+                    if (error.status === 429 || (error.error && error.error.code === 'rate_limit_exceeded')) {
+                        attempt++;
+                        if (attempt > retries) throw error; // Exhausted retries
+
+                        // Exponential backoff: 1s, 2s, 4s
+                        const delay = 1000 * Math.pow(2, attempt - 1);
+                        console.warn(`[Cerebras] Rate limit (429) on ${model}. Retrying in ${delay}ms... (Attempt ${attempt}/${retries})`);
+                        await sleep(delay);
+                        continue;
+                    }
+
+                    throw error; // Other errors propagate to model loop
+                }
+            }
+        } catch (error) {
+            lastError = error;
+
+            // If model not found (404), try next model
+            if (error.status === 404 || (error.error && error.error.code === 'model_not_found')) {
+                console.warn(`[Cerebras] Model ${model} not found or inaccessible. Trying next...`);
+                continue;
+            }
+
+            // For other critical errors, stop trying models if it's likely not model-specific
+            // But let's be safe and try next model unless it's auth error
+            if (error.status === 401) {
+                throw error; // Auth failed, no point trying others
+            }
+
+            console.warn(`[Cerebras] Error with ${model}: ${error.message}. Trying next...`);
+        }
+    }
+
+    throw lastError || new Error('All models failed to respond.');
+}
 
 /**
  * Translate natural language to SQL using Cerebras AI
@@ -46,19 +132,13 @@ IMPORTANT RULES:
         : `QUERY: ${naturalLanguage}\n\nSQL:`;
 
     try {
-        const cerebrasClient = getClient();
-        if (!cerebrasClient) {
-            throw new Error('Cerebras API key not configured');
-        }
-        const completion = await cerebrasClient.chat.completions.create({
-            messages: [
+        const completion = await createCompletion(
+            [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
             ],
-            model: MODEL,
-            temperature: 0.1, // Low temperature for more deterministic SQL
-            max_completion_tokens: 1024,
-        });
+            { temperature: 0.1 }
+        );
 
         let sql = completion.choices[0]?.message?.content?.trim() || '';
 
@@ -75,7 +155,7 @@ IMPORTANT RULES:
             success: true,
         };
     } catch (error) {
-        console.error('Cerebras translation error:', error);
+        console.error('Translation error:', error);
         throw error;
     }
 }
@@ -93,16 +173,10 @@ SQL: ${sql}
 Provide a clear, concise explanation that a beginner could understand.`;
 
     try {
-        const cerebrasClient = getClient();
-        if (!cerebrasClient) {
-            throw new Error('Cerebras API key not configured');
-        }
-        const completion = await cerebrasClient.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: MODEL,
-            temperature: 0.3,
-            max_completion_tokens: 1024,
-        });
+        const completion = await createCompletion(
+            [{ role: 'user', content: prompt }],
+            { temperature: 0.3 }
+        );
 
         const explanation = completion.choices[0]?.message?.content?.trim() || '';
 
@@ -145,16 +219,10 @@ Database: ${database}
 Provide 2-3 specific, actionable suggestions with estimated performance improvements.`;
 
     try {
-        const cerebrasClient = getClient();
-        if (!cerebrasClient) {
-            throw new Error('Cerebras API key not configured');
-        }
-        const completion = await cerebrasClient.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: MODEL,
-            temperature: 0.3,
-            max_completion_tokens: 1024,
-        });
+        const completion = await createCompletion(
+            [{ role: 'user', content: prompt }],
+            { temperature: 0.3 }
+        );
 
         const response = completion.choices[0]?.message?.content?.trim() || '';
 
@@ -263,19 +331,13 @@ ${errorMessage}
 Please fix the SQL query based on the error and schema. Return ONLY the corrected SQL:`;
 
     try {
-        const cerebrasClient = getClient();
-        if (!cerebrasClient) {
-            throw new Error('Cerebras API key not configured');
-        }
-        const completion = await cerebrasClient.chat.completions.create({
-            messages: [
+        const completion = await createCompletion(
+            [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
             ],
-            model: MODEL,
-            temperature: 0.1,
-            max_completion_tokens: 1024,
-        });
+            { temperature: 0.1 }
+        );
 
         let fixedSql = completion.choices[0]?.message?.content?.trim() || '';
 
@@ -328,19 +390,13 @@ IMPORTANT RULES:
         : `QUERY: ${naturalLanguage}\n\nMONGODB JSON:`;
 
     try {
-        const cerebrasClient = getClient();
-        if (!cerebrasClient) {
-            throw new Error('Cerebras API key not configured');
-        }
-        const completion = await cerebrasClient.chat.completions.create({
-            messages: [
+        const completion = await createCompletion(
+            [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
             ],
-            model: MODEL,
-            temperature: 0.1,
-            max_completion_tokens: 1024,
-        });
+            { temperature: 0.1 }
+        );
 
         let response = completion.choices[0]?.message?.content?.trim() || '';
 
@@ -406,19 +462,13 @@ ${errorMessage}
 Please fix the MongoDB query based on the error and schema. Return ONLY the corrected JSON:`;
 
     try {
-        const cerebrasClient = getClient();
-        if (!cerebrasClient) {
-            throw new Error('Cerebras API key not configured');
-        }
-        const completion = await cerebrasClient.chat.completions.create({
-            messages: [
+        const completion = await createCompletion(
+            [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
             ],
-            model: MODEL,
-            temperature: 0.1,
-            max_completion_tokens: 1024,
-        });
+            { temperature: 0.1 }
+        );
 
         let response = completion.choices[0]?.message?.content?.trim() || '';
 
@@ -465,5 +515,6 @@ module.exports = {
     debugSQL,
     debugMongoDB,
     isAvailable,
-    MODEL,
+    // Export models list for testing/info
+    MODELS,
 };

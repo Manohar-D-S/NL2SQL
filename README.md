@@ -1,45 +1,45 @@
-# NL2SQL - Natural Language to SQL Translator
+# NL2SQL - Natural Language to SQL & MongoDB Translator
 
-A modern web application that translates natural language queries into executable SQL and MongoDB commands using an AI-powered backend system.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Next.js](https://img.shields.io/badge/Next.js-16.0-black)
+![React](https://img.shields.io/badge/React-19.0-blue)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-cyan)
 
-## 🌟 Overview
+A powerful, modern web application that translates natural language into executable SQL and MongoDB queries using AI. Built with Next.js 16, React 19, and the Cerebras Inference Cloud.
 
-NL2SQL bridges the gap between human language and database queries. Simply describe what data you want in plain English, and the system converts it into valid SQL or MongoDB queries that you can execute directly against your databases.
+## 🌟 Key Features
 
-### Key Features
+### 🧠 Intelligent Translation
+- **Natural Language Processing**: Convert plain English instructions into complex SQL or MongoDB queries.
+- **Multi-Database Support**: Seamlessly switch between **MySQL** (Relational) and **MongoDB** (NoSQL).
+- **Context-Aware**: Uses your database schema to generate accurate table and column names.
+- **AI Backend**: Powered by **Llama 3.3-70b** via Cerebras for lightning-fast inference.
 
-- **Natural Language Translation** - Convert plain English to SQL/MongoDB queries
-- **Multi-Database Support** - Works with both MySQL and MongoDB
-- **Query Explanation** - Get human-readable explanations of SQL queries
-- **Query Optimization** - AI-powered suggestions to improve query performance
-- **Safety Validation** - Automatic detection of potentially dangerous queries
-- **Query Debugging** - AI-assisted fixing of failed queries
-- **Modern UI** - Clean, responsive interface built with Next.js
+### 🛡️ Safety & Reliability
+- **Query Validation**: Automatically detects and warns about destructive operations (DROP, DELETE, TRUNCATE).
+- **SQL Injection Guard**: Identifies potential injection patterns before execution.
+- **Auto-Debugging**: When a query fails, the AI analyzes the error and suggests a fix automatically.
+
+### 💻 Modern Developer Experience
+- **Three-Panel Interface**:
+  1. **Input**: Natural language query and AI explanations.
+  2. **Results**: Real-time execution results and performance metrics.
+  3. **Editor**: Full-featured SQL/JSON editor for manual tweaking.
+- **Detailed Explanations**: Get human-readable breakdowns of what every part of a query does.
+- **Optimization Tips**: Receive AI suggestions to improve query performance (indexes, rewriting).
+
+---
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Frontend (Next.js)                    │
-│                 http://localhost:3000                   │
-└────────────────────────┬────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────┐
-│              Backend NL2SQL Server (Node.js)            │
-│                 http://localhost:5000                   │
-│  • /api/translate - NL to SQL translation               │
-│  • /api/explain   - Query explanation                   │
-│  • /api/optimize  - Query optimization                  │
-│  • /api/validate  - Safety validation                   │
-│  • /api/execute   - Execute queries                     │
-└───────────┬─────────────────────────────┬───────────────┘
-            │                             │
-            ▼                             ▼
-    ┌───────────────┐             ┌───────────────┐
-    │     MySQL     │             │    MongoDB    │
-    │  (Port 3306)  │             │ (Port 27017)  │
-    └───────────────┘             └───────────────┘
+The application follows a clean client-server architecture:
+
+```mermaid
+graph TD
+    Client[Next.js Frontend\n(Port 3000)] -->|HTTP/REST| Server[Node.js Express API\n(Port 5000)]
+    Server -->|Generate| AI[Cerebras AI Cloud\n(Llama 3.3)]
+    Server -->|Execute SQL| MySQL[(MySQL Database)]
+    Server -->|Execute NoSQL| Mongo[(MongoDB Database)]
 ```
 
 ---
@@ -47,218 +47,98 @@ NL2SQL bridges the gap between human language and database queries. Simply descr
 ## 🚀 Getting Started
 
 ### Prerequisites
+- **Node.js** v18+
+- **MySQL** (Local or Remote)
+- **MongoDB** (Local or Atlas)
+- **Cerebras API Key** (Get one at [cloud.cerebras.ai](https://cloud.cerebras.ai))
 
-- **Node.js** v18 or higher
-- **npm** or **yarn**
-- **MySQL** (local or remote)
-- **MongoDB** (local or MongoDB Atlas)
+### Installation
 
----
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Manohar-D-S/NL2SQL.git
+   cd NL2SQL
+   ```
 
-## 📦 Installation & Setup (Manual)
+2. **Install dependencies:**
+   ```bash
+   # Install frontend dependencies
+   npm install
 
-### Step 1: Clone the Repository
+   # Install backend dependencies
+   cd backend
+   npm install
+   cd ..
+   ```
 
-```bash
-git clone https://github.com/Manohar-D-S/NL2SQL.git
-cd NL2SQL
-```
+3. **Configure Environment:**
+   Create a `.env` file in the root directory:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Update `.env` with your credentials:
+   ```env
+   # API Keys
+   CEREBRAS_API_KEY=your_key_here
 
-### Step 2: Install Frontend Dependencies
+   # Database Config
+   MONGODB_URI=mongodb+srv://...
+   MYSQL_HOST=localhost
+   MYSQL_USER=root
+   MYSQL_PASSWORD=password
+   ```
 
-```bash
-npm install
-```
+4. **Run the Application:**
+   ```bash
+   # Start Client and Server concurrently
+   npm start
+   ```
+   
+   Or run them separately:
+   ```bash
+   # Terminal 1: Backend
+   npm run dev:backend
 
-### Step 3: Install Backend Dependencies
+   # Terminal 2: Frontend
+   npm run dev:frontend
+   ```
 
-```bash
-cd backend
-npm install
-cd ..
-```
-
-### Step 4: Configure Environment Variables
-
-Create a `.env` file in the root directory using the template:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in your configuration:
-
-```env
-# NL2SQL Backend API Key (Required)
-CEREBRAS_API_KEY=your_api_key_here
-
-# MongoDB Configuration
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/
-MONGODB_DB_NAME=your_database
-MONGODB_DATABASE=your_database
-MONGODB_PSWD=your_password
-
-# MySQL Configuration
-MYSQL_HOST=localhost
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password
-MYSQL_PORT=3306
-
-# Server Configuration
-SQL_SERVER_PORT=5000
-NOSQL_SERVER_PORT=5000
-```
-
-### Step 5: Start the Application
-
-**Option A: Start both frontend and backend together**
-
-```bash
-npm start
-```
-
-**Option B: Start separately**
-
-```bash
-# Terminal 1 - Start the backend NL2SQL server
-npm run dev:backend
-
-# Terminal 2 - Start the frontend
-npm run dev:frontend
-```
-
-### Step 6: Access the Application
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:5000
+   - Frontend: [http://localhost:3000](http://localhost:3000)
+   - Backend: [http://localhost:5000](http://localhost:5000)
 
 ---
 
-## 🐳 Docker Setup
+## 🐳 Docker Support
 
-### Prerequisites
-
-- **Docker** v20.10 or higher
-- **Docker Compose** v2.0 or higher
-
-### Step 1: Clone and Configure
-
-```bash
-git clone https://github.com/Manohar-D-S/NL2SQL.git
-cd NL2SQL
-cp .env.example .env
-```
-
-Edit the `.env` file with your configuration (see Step 4 above).
-
-### Step 2: Build and Run with Docker Compose
+Run the entire stack (Frontend + Backend + MySQL) with one command.
 
 ```bash
 docker-compose up --build
 ```
-
-This will start:
-- **Frontend** on port `3000`
-- **Backend NL2SQL Server** on port `5000`
-- **MySQL Database** on port `3307` (mapped from container's 3306)
-
-### Step 3: Access the Application
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:5000
-
-### Docker Commands
-
-```bash
-# Start in detached mode
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop all services
-docker-compose down
-
-# Stop and remove volumes (clean reset)
-docker-compose down -v
-
-# Rebuild without cache
-docker-compose build --no-cache
-```
+*Note: MySQL will be available on port **3307** to avoid conflicts with local instances.*
 
 ---
 
-## 📁 Project Structure
+## 🛠 Project Structure
 
 ```
 NL2SQL/
-├── app/                    # Next.js app directory
-│   ├── page.tsx            # Main application page
-│   └── layout.tsx          # Root layout
-├── backend/                # Backend NL2SQL server
-│   ├── server.js           # Express server entry point
-│   ├── routes/             # API route handlers
-│   ├── mysql.js            # MySQL connection handler
-│   ├── mongodb.js          # MongoDB connection handler
-│   └── Dockerfile          # Backend container config
-├── components/             # React components
-├── lib/                    # Utility functions
-├── scripts/                # Database initialization scripts
-├── docker-compose.yml      # Docker orchestration
-├── Dockerfile              # Frontend container config
-└── package.json            # Project dependencies
+├── app/                  # Next.js 16 App Router
+│   ├── page.tsx          # Main Workspace UI
+│   └── layout.tsx        # Root Layout
+├── backend/              # Express Server
+│   ├── server.js         # API Entry Point
+│   ├── cerebras.js       # AI Logic (Llama 3.3)
+│   ├── mysql.js          # MySQL Connector
+│   └── mongodb.js        # MongoDB Connector
+├── components/           # React 19 Components
+│   ├── ui/               # Shadcn UI primitives
+│   ├── nl-input-bar.tsx  # Input component
+│   └── sql-editor.tsx    # Code editor
+└── public/               # Static assets
 ```
-
----
-
-## 🔌 API Endpoints
-
-| Method | Endpoint           | Description                    |
-|--------|-------------------|--------------------------------|
-| GET    | `/api/health`     | Health check                   |
-| POST   | `/api/translate`  | Translate NL to SQL/MongoDB    |
-| POST   | `/api/explain`    | Explain SQL query              |
-| POST   | `/api/optimize`   | Get optimization suggestions   |
-| POST   | `/api/validate`   | Validate query safety          |
-| GET    | `/api/databases`  | List available databases       |
-| POST   | `/api/execute`    | Execute SQL query              |
-| GET    | `/api/schema/:db` | Get database schema            |
-
----
-
-## 🛠️ Development
-
-```bash
-# Run frontend only
-npm run dev:frontend
-
-# Run backend only
-npm run dev:backend
-
-# Run both concurrently
-npm run dev:all
-
-# Build for production
-npm run build
-
-# Start production server
-npm run start:prod
-```
-
----
-
-## ⚠️ Important Notes
-
-1. **Database Connection**: Ensure your MySQL and MongoDB servers are running before starting the application.
-
-2. **Environment Variables**: Never commit your `.env` file. Use `.env.example` as a template.
-
-3. **Docker MySQL Port**: When using Docker, MySQL is exposed on port `3307` to avoid conflicts with local MySQL installations.
-
-4. **MongoDB Atlas**: If using MongoDB Atlas, make sure to whitelist your IP address in the Atlas dashboard.
-
----
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

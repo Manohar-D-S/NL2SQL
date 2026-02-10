@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "dev:frontend": "next dev",
-    "dev:backend": "node backend/nodejs/server.js",
+    "dev:backend": "node backend/server.js",
     "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "lint": "eslint .",
     "start": "concurrently \"npm run dev:backend\" \"next dev\"",

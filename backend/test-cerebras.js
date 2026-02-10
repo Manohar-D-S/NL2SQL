@@ -32,7 +32,7 @@ async function testCerebrasConnection() {
 
     // Test with a simple query
     console.log('\n🧠 Testing Qwen 3 235B model...');
-    console.log('   Model: qwen-3-235b-a22b-instruct-2507');
+    console.log('   Model: llama-3.3-70b');
 
     try {
         const startTime = Date.now();
@@ -48,7 +48,7 @@ async function testCerebrasConnection() {
                     content: 'Convert to SQL: Show all databases'
                 },
             ],
-            model: 'qwen-3-235b-a22b-instruct-2507',
+            model: 'llama-3.3-70b',
             temperature: 0.1,
             max_completion_tokens: 256,
         });

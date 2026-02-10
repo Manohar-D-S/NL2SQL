@@ -131,7 +131,7 @@ export default function WorkspacePage() {
                 <Database className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight">SQL Translator</h1>
+                <h1 className="text-lg font-bold tracking-tight">NL2SQL</h1>
                 <p className="text-xs text-muted-foreground font-medium">Natural Language → SQL</p>
               </div>
             </div>
